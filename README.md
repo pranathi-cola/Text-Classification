@@ -10,6 +10,6 @@ This project implements and compares multiple binary classification models on th
 
 ## Execution
 
-1. Open [Google Colab] - https://colab.research.google.com/
+1. Open [Google Colab](https://colab.research.google.com/)
 2. Copy Code into a new notebook or Upload the .ipynb file
 3. Run the cell
