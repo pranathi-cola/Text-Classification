@@ -20,6 +20,8 @@ from sklearn.metrics import (
     average_precision_score, ConfusionMatrixDisplay
 )
 from imblearn.over_sampling import SMOTE, RandomOverSampler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
 
 nltk.download('stopwords')
 from nltk.corpus import stopwords
@@ -145,8 +147,8 @@ def evaluate_model(model, X_train_vec, y_train, X_test_vec, y_test, model_name="
 
 models = {
     'Logistic Regression': LogisticRegression(max_iter=1000, random_state=42),
-    'Naive Bayes': MultinomialNB(),
-    'Linear SVM': LinearSVC(max_iter=2000, random_state=42)
+    'Random Forest': RandomForestClassifier(n_estimators=100, random_state=42),
+    'Neural Network (MLP)': MLPClassifier(hidden_layer_sizes=(100,), max_iter=1000, random_state=42)
 }
 
 results_a = []
@@ -162,18 +164,19 @@ metrics = evaluate_model(lr_bal, X_train_tfidf, y_train, X_test_tfidf, y_test,
                          model_name="Logistic Regression", technique="(Class Weighting)")
 results_b1.append(metrics)
 
-svm_bal = LinearSVC(class_weight='balanced', max_iter=2000, random_state=42)
-metrics = evaluate_model(svm_bal, X_train_tfidf, y_train, X_test_tfidf, y_test,
-                         model_name="Linear SVM", technique="(Class Weighting)")
+rf_bal = RandomForestClassifier(class_weight='balanced', n_estimators=100, random_state=42)
+metrics = evaluate_model(rf_bal, X_train_tfidf, y_train, X_test_tfidf, y_test,
+                         model_name="Random Forest", technique="(Class Weighting)")
 results_b1.append(metrics)
 
 ros = RandomOverSampler(random_state=42)
 X_train_ros, y_train_ros = ros.fit_resample(X_train_tfidf, y_train)
-nb_ros = MultinomialNB()
-metrics = evaluate_model(nb_ros, X_train_ros, y_train_ros, X_test_tfidf, y_test,
-                         model_name="Naive Bayes", technique="(Random Oversampling)")
+mlp_ros = MLPClassifier(hidden_layer_sizes=(100,), max_iter=1000, random_state=42)
+metrics = evaluate_model(mlp_ros, X_train_ros, y_train_ros, X_test_tfidf, y_test,
+                         model_name="Neural Network (MLP)", technique="(Random Oversampling)")
 results_b1.append(metrics)
 
+results_b2 = []
 results_b2 = []
 smote = SMOTE(random_state=42)
 X_train_smote, y_train_smote = smote.fit_resample(X_train_tfidf, y_train)
