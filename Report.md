@@ -6,19 +6,21 @@
 
 ## 1. Introduction
 
-The goal of this project is to build and compare binary text classification models on the **Disaster Tweets dataset**, which exhibits significant class imbalance (majority non‑disaster, minority disaster). Class imbalance often causes models to be biased toward the majority class, leading to poor recall for the minority class – a critical issue when detecting real disasters.
+The goal of this project is to build and compare binary text classification models on the **Disaster Tweets** dataset, which exhibits significant class imbalance (majority non‑disaster, minority disaster). Class imbalance often causes models to be biased toward the majority class, leading to poor recall for the minority class – a critical issue when detecting real disasters.
 
-We implement three classifiers: Logistic Regression, Naive Bayes, and Linear SVM. For each, we evaluate performance **without** imbalance handling, then apply **two different techniques**: class weighting (or random oversampling) and SMOTE. Performance is measured using accuracy, precision, recall, F1‑score, ROC‑AUC, PR‑AUC, and confusion matrices.
+We implement three classifiers: **Logistic Regression**, **Random Forest**, and a **Neural Network with a fixed architecture** (64→32→16). For each, we evaluate performance **without** imbalance handling, then apply **two different techniques**: class weighting (or random oversampling) and SMOTE. Performance is measured using accuracy, precision, recall, F1‑score, ROC‑AUC, PR‑AUC, and confusion matrices.
 
 ---
 
 ## 2. Dataset Description
 
 The dataset is sourced from Kaggle: [Disaster Tweets](https://www.kaggle.com/datasets/vstepanenko/disaster-tweets). It contains **11,370 tweets**, each labeled as:
+
 - **0** – Non‑disaster tweet
 - **1** – Real disaster tweet
 
 **Class distribution:**
+
 - Non‑disaster: 9,256 (81.4%)
 - Disaster: 2,114 (18.6%)
 
@@ -40,7 +42,7 @@ The following text preprocessing steps were applied to each tweet:
    - `max_features = 5000`
    - `ngram_range = (1,2)` (unigrams and bigrams)
 
-Example:
+**Example:**
 
 | Original tweet | Cleaned text |
 |----------------|---------------|
@@ -51,9 +53,16 @@ Example:
 ## 4. Methodology
 
 ### 4.1 Models Implemented
-- **Logistic Regression** – linear classifier with L2 regularization.
-- **Multinomial Naive Bayes** – suitable for multinomial distributions (TF‑IDF features).
-- **Linear Support Vector Machine (LinearSVC)** – maximizes margin between classes.
+
+- **Logistic Regression** – linear classifier with L2 regularization (tunable: regularization type, strength, solver, decision threshold). We used default `penalty='l2'`, `C=1.0`, `solver='lbfgs'`, threshold=0.5.
+- **Random Forest** – ensemble of 100 decision trees (tunable: number of trees, max depth, min samples split, min samples leaf). We used `n_estimators=100`, `max_depth=None`, `min_samples_split=2`, `min_samples_leaf=1`.
+- **Neural Network (Fixed Architecture)** – built with Keras, architecture fixed as:
+  - Input layer (vectorized text)
+  - Hidden Layer 1: 64 neurons
+  - Hidden Layer 2: 32 neurons
+  - Hidden Layer 3: 16 neurons
+  - Output layer: 1 neuron with sigmoid activation
+  - Tunable hyperparameters: activation (ReLU chosen), optimizer (Adam), learning rate (0.001), batch size (32), epochs (20), weight initialization (glorot_uniform), dropout (0.0), L2 regularization (0.0), decision threshold (0.5).
 
 ### 4.2 Imbalance Handling Techniques
 
@@ -63,14 +72,11 @@ All models trained on the original imbalanced training set.
 #### Part B – With Imbalance Handling
 We applied **two distinct techniques**:
 
-1. **Class Weighting / Random Oversampling**  
-   - For Logistic Regression and Linear SVM: `class_weight='balanced'` (adjusts weights inversely proportional to class frequencies).  
-   - For Naive Bayes (which does not support class_weight): **Random Oversampling** of the minority class in the training set.
+1. **Class Weighting** (for Logistic Regression and Random Forest) – using `class_weight='balanced'` to adjust weights inversely proportional to class frequencies.  
+   For the Neural Network, we used **SMOTE** as the first technique (since class weighting is not directly applicable to Keras without custom weighting).
 
-2. **SMOTE (Synthetic Minority Oversampling Technique)**  
-   - Applied to the TF‑IDF vectors of the training set.  
-   - Generates synthetic samples for the minority class by interpolating between existing minority instances.  
-   - Results in a perfectly balanced training set (7,405 samples per class).
+2. **SMOTE (Synthetic Minority Oversampling Technique)** – applied to the TF‑IDF vectors of the training set for **all models** (Logistic Regression, Random Forest, and Neural Network).  
+   Additionally, we demonstrated **Random Oversampling** for the Neural Network as a variant.
 
 All models are evaluated on the **same test set** (stratified split, 20% of data) to ensure fair comparison.
 
@@ -81,7 +87,7 @@ All models are evaluated on the **same test set** (stratified split, 20% of data
 - **Train / Test split:** 80% / 20% (stratified by target class)  
   - Training size: 9,096 tweets  
   - Test size: 2,274 tweets  
-- **Random seed:** 42 
+- **Random seed:** 42 (for reproducibility)  
 - **TF‑IDF parameters:** max_features = 5000, ngram_range = (1,2)  
 - **Evaluation metrics:**  
   - Accuracy, Precision (per class), Recall (per class), F1‑score (macro & weighted)  
@@ -98,62 +104,79 @@ All models are evaluated on the **same test set** (stratified split, 20% of data
 | Model | Accuracy | F1 Macro | Recall (Disaster) | PR‑AUC |
 |-------|----------|----------|-------------------|--------|
 | Logistic Regression | 0.8690 | 0.7131 | 0.3546 | 0.7256 |
-| Naive Bayes | 0.8703 | 0.7227 | 0.3783 | 0.7317 |
-| **Linear SVM** | **0.8826** | **0.7866** | **0.5697** | **0.7141** |
+| Random Forest | 0.8791 | 0.7654 | 0.4917 | 0.7155 |
+| Neural Network (Fixed Arch) | 0.8624 | 0.7651 | 0.5887 | 0.7022 |
 
-- **Observation:** Linear SVM achieves the highest accuracy and F1 macro, but recall for disaster tweets is only 57%. Logistic Regression and Naive Bayes have very low recall (~35–38%), missing most real disasters.
+**Observation:** Random Forest achieves the highest accuracy (87.9%). The Neural Network has the best recall for disaster tweets (58.9%) without any balancing, significantly better than Logistic Regression (35.5%). However, its PR‑AUC is slightly lower, indicating a less favorable precision‑recall trade‑off.
 
 ### 6.2 Performance With Imbalance Handling
 
-#### Technique 1: Class Weighting / Random Oversampling
+#### Technique 1: Class Weighting (LR, RF) + SMOTE (NN)
 
 | Model | Technique | Accuracy | F1 Macro | Recall (Disaster) | PR‑AUC |
 |-------|-----------|----------|----------|-------------------|--------|
-| Logistic Regression | Class Weighting | 0.8465 | 0.7739 | 0.7518 | 0.7192 |
-| Linear SVM | Class Weighting | 0.8439 | 0.7644 | 0.7069 | 0.6865 |
-| **Naive Bayes** | **Random Oversampling** | **0.8347** | **0.7627** | **0.7636** | **0.7383** |
+| Logistic Regression | Class Weighting | 0.8465 | **0.7739** | **0.7518** | 0.7192 |
+| Random Forest | Class Weighting | **0.8804** | 0.7637 | 0.4775 | 0.7298 |
+| Neural Network | SMOTE | 0.8571 | 0.7616 | 0.6028 | 0.6979 |
 
-- **Observation:** All techniques significantly boost recall for the disaster class (from ~35% to >70%). Naive Bayes + Random Oversampling gives the highest recall (76.4%) and PR‑AUC (0.7383). Accuracy drops slightly but is still acceptable.
+**Observation:** 
+- **Logistic Regression with class weighting** achieves the highest recall (75.2%) and F1 macro (0.7739), making it the best model for detecting disasters.
+- **Random Forest with class weighting** maintains the highest overall accuracy (88.0%) but its recall for the disaster class remains low (47.8%).
+- Neural Network with SMOTE improves recall slightly (from 58.9% to 60.3%) but still underperforms compared to Logistic Regression.
 
-#### Technique 2: SMOTE
+#### Technique 2: SMOTE (all models) + Random Oversampling (NN variant)
 
 | Model | Technique | Accuracy | F1 Macro | Recall (Disaster) | PR‑AUC |
 |-------|-----------|----------|----------|-------------------|--------|
 | Logistic Regression | SMOTE | 0.8509 | 0.7732 | 0.7139 | 0.7223 |
-| Naive Bayes | SMOTE | 0.8412 | 0.7671 | 0.7447 | 0.7388 |
-| Linear SVM | SMOTE | 0.8514 | 0.7682 | 0.6785 | 0.6869 |
+| Random Forest | SMOTE | 0.8760 | 0.7694 | 0.5272 | 0.7304 |
+| Neural Network | Random Oversampling | 0.8619 | 0.7655 | 0.5934 | 0.6997 |
 
-- **Observation:** SMOTE also improves recall substantially, though slightly lower than random oversampling for Naive Bayes. For SVM, SMOTE gives a balanced trade‑off between precision and recall.
+**Observation:** 
+- SMOTE improves Logistic Regression recall to 71.4% (slightly less than class weighting's 75.2%). 
+- Random Forest with SMOTE improves recall to 52.7%, still far behind Logistic Regression.
+- Neural Network with Random Oversampling performs similarly to SMOTE (recall ~59%).
 
-### 6.3 Confusion Matrices, ROC Curves, PR Curves
+### 6.3 Best Performance Summary
+
+| Metric | Best Model | Technique | Value |
+|--------|-----------|-----------|-------|
+| Accuracy | Random Forest | Class Weighting | 0.8804 |
+| F1 Macro | Logistic Regression | Class Weighting | 0.7739 |
+| Recall (Disaster) | Logistic Regression | Class Weighting | 0.7518 |
+
+### 6.4 Confusion Matrices, ROC Curves, PR Curves
 
 *(Plots are generated by the code – include them in your final PDF.)*
 
 Key observations from plots:
-- Without balancing, the confusion matrix shows many false negatives (disasters missed).
-- With balancing, false negatives decrease, but false positives increase slightly.
-- ROC‑AUC remains high (>0.88) for all models, but PR‑AUC is more sensitive to imbalance and improves with balancing.
+- Without balancing, Logistic Regression shows many false negatives (disasters missed).
+- Class weighting for Logistic Regression drastically reduces false negatives, though false positives increase.
+- Random Forest maintains high accuracy but struggles to identify disaster tweets even after balancing.
+- The Neural Network achieves moderate recall but lower PR‑AUC indicates poor precision at higher recall levels.
 
 ---
 
 ## 7. Analysis and Discussion
 
 ### 7.1 Effect of Class Imbalance
-Imbalance causes models to favour the majority (non‑disaster) class. Even though accuracy is high (>87%), the **recall for disaster tweets is disastrously low** (35–57%). This means in a real‑world scenario, most actual disasters would go undetected – unacceptable for an emergency alert system.
+Imbalance causes models to favour the majority (non‑disaster) class. Logistic Regression without balancing has only 35.5% recall for disasters – in a real‑world scenario, nearly two out of three actual disasters would be missed. Random Forest does better (49.2% recall) but still insufficient. The Neural Network achieves 58.9% recall even without balancing, suggesting its non‑linearity helps capture minority patterns.
 
 ### 7.2 Which Imbalance Technique Works Best?
-- **For recall:** Naive Bayes + Random Oversampling achieves the highest recall (76.4%), making it the best choice if the goal is to catch as many disasters as possible (even at the cost of some false alarms).
-- **For balanced metrics (F1 macro):** Linear SVM without balancing gives the highest F1 macro (0.7866), but this is because it still favours the majority class. After balancing, F1 macro improves for minority class but overall macro drops slightly due to lower precision on majority class.
-- **Class weighting** and **SMOTE** perform similarly for Logistic Regression and SVM. For Naive Bayes, random oversampling edges out SMOTE.
+- **For recall (most important for disaster detection):** Logistic Regression with class weighting achieves the highest recall (75.2%). This is the best choice for catching real disasters.
+- **For balanced metrics (F1 macro):** Again, Logistic Regression with class weighting gives the highest F1 macro (0.7739), indicating the best overall trade‑off between precision and recall.
+- **For accuracy:** Random Forest with class weighting gives the highest accuracy (88.0%), but this is misleading because its recall for disasters is low (47.8%).
+- **Neural Network** underperforms compared to Logistic Regression, possibly due to the need for more hyperparameter tuning (e.g., learning rate, dropout, L2) or more training epochs.
 
-### 7.3 SMOTE vs. Class Weighting / Oversampling
-- **SMOTE** generates synthetic samples, which can help generalisation but may introduce noise if not tuned. In our experiments, SMOTE yields slightly lower recall for SVM but more stable precision.
-- **Class weighting** is simpler and computationally cheaper. It works well for LR and SVM.
-- **Random oversampling** (for NB) is straightforward and effective, though it can lead to overfitting if the same minority samples are repeated; however, the test performance remains good.
+### 7.3 SMOTE vs. Class Weighting
+- **Class weighting** works exceptionally well for Logistic Regression, boosting recall from 35.5% to 75.2% while maintaining decent precision (56.6%).
+- **SMOTE** also improves Logistic Regression (71.4% recall) but slightly less than class weighting.
+- For Random Forest, neither technique improves recall substantially (still below 53%), suggesting that tree‑based models may need different handling (e.g., threshold moving).
+- For the Neural Network, SMOTE and Random Oversampling give similar modest improvements (recall ~60%), far below Logistic Regression's performance.
 
 ### 7.4 Precision‑Recall Trade‑off
-- Improving recall for the disaster class inevitably reduces precision (more false positives). This is acceptable in disaster detection: **it is better to issue a false alarm than to miss a real disaster**.
-- The PR‑AUC metric confirms that balancing techniques improve the overall precision‑recall trade‑off. The highest PR‑AUC (0.7388) is achieved by Naive Bayes + Random Oversampling / SMOTE.
+- Improving recall inevitably reduces precision. Logistic Regression with class weighting has precision of 56.6% for disasters – meaning about 43% of its disaster alerts are false positives. This is acceptable in disaster detection: **it is better to issue a false alarm than to miss a real disaster**.
+- The PR‑AUC metric confirms that Logistic Regression with class weighting (0.719) and SMOTE (0.722) offer a good trade‑off, though Random Forest with SMOTE has a slightly higher PR‑AUC (0.730) due to better precision at lower recall levels.
 
 ---
 
@@ -161,13 +184,18 @@ Imbalance causes models to favour the majority (non‑disaster) class. Even thou
 
 This project successfully demonstrated the impact of class imbalance on text classification and the effectiveness of various mitigation techniques.
 
-- Without imbalance handling, models have high accuracy but very poor recall for the minority (disaster) class.
-- **Naive Bayes combined with Random Oversampling** provides the best recall (76.4%) and PR‑AUC, making it the most suitable model for real‑world disaster tweet detection where catching disasters is critical.
-- Class weighting and SMOTE also improve recall significantly and are viable alternatives depending on the desired precision‑recall balance.
+**Key findings:**
+- Without imbalance handling, all models have poor recall for the disaster class, especially Logistic Regression (35.5%).
+- **Logistic Regression with class weighting** is the overall best model, achieving the highest recall (75.2%), highest F1 macro (0.7739), and competitive PR‑AUC. It is the most suitable for real‑world disaster detection where catching disasters is critical.
+- Random Forest achieves the highest accuracy (88.0%) but fails to improve disaster recall beyond 53%, making it less useful for this application.
+- The fixed‑architecture Neural Network (64‑32‑16) shows moderate recall (max 60.3% with SMOTE) but requires more tuning to outperform Logistic Regression.
+- Class weighting is simpler and more effective than SMOTE for Logistic Regression; for Random Forest, neither technique works well.
 
 ---
 
 ## References
+
 1. Kaggle Dataset: [Disaster Tweets](https://www.kaggle.com/datasets/vstepanenko/disaster-tweets)
-2. Scikit‑learn documentation: [Class Weight](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html)
-3. Imbalanced‑learn documentation: [RandomOverSampler, SMOTE](https://imbalanced-learn.org/stable/)
+2. Scikit‑learn documentation: [Logistic Regression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html), [Random Forest](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html)
+3. TensorFlow/Keras documentation: [Sequential model](https://www.tensorflow.org/guide/keras/sequential_model)
+4. Imbalanced‑learn documentation: [SMOTE, RandomOverSampler](https://imbalanced-learn.org/stable/)
