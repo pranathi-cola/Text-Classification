@@ -1,8 +1,5 @@
 # Imbalanced Text Classification for Disaster Tweet Detection
 
-**Course:** CS3012E Artificial Intelligence
-**Instructors:** Dr. Chandramani Chaudhary, Dr. Santosh Kumar Behera, Dr. Vidhya Kamakshi
-**Submission Date:** 6th April 2026
 **Team Members:** Kola Pranathi, Kommula Devamani, Bokka Roshini Sreeja
 
 ---
@@ -84,7 +81,7 @@ All models are evaluated on the **same test set** (stratified split, 20% of data
 - **Train / Test split:** 80% / 20% (stratified by target class)  
   - Training size: 9,096 tweets  
   - Test size: 2,274 tweets  
-- **Random seed:** 42 (for reproducibility)  
+- **Random seed:** 42 
 - **TF‑IDF parameters:** max_features = 5000, ngram_range = (1,2)  
 - **Evaluation metrics:**  
   - Accuracy, Precision (per class), Recall (per class), F1‑score (macro & weighted)  
@@ -102,7 +99,7 @@ All models are evaluated on the **same test set** (stratified split, 20% of data
 |-------|----------|----------|-------------------|--------|
 | Logistic Regression | 0.8690 | 0.7131 | 0.3546 | 0.7256 |
 | Naive Bayes | 0.8703 | 0.7227 | 0.3783 | 0.7317 |
-| **Linear SVM** | **0.8826** | **0.7866** | 0.5697 | 0.7141 |
+| **Linear SVM** | **0.8826** | **0.7866** | **0.5697** | **0.7141** |
 
 - **Observation:** Linear SVM achieves the highest accuracy and F1 macro, but recall for disaster tweets is only 57%. Logistic Regression and Naive Bayes have very low recall (~35–38%), missing most real disasters.
 
@@ -114,7 +111,7 @@ All models are evaluated on the **same test set** (stratified split, 20% of data
 |-------|-----------|----------|----------|-------------------|--------|
 | Logistic Regression | Class Weighting | 0.8465 | 0.7739 | 0.7518 | 0.7192 |
 | Linear SVM | Class Weighting | 0.8439 | 0.7644 | 0.7069 | 0.6865 |
-| **Naive Bayes** | **Random Oversampling** | 0.8347 | 0.7627 | **0.7636** | **0.7383** |
+| **Naive Bayes** | **Random Oversampling** | **0.8347** | **0.7627** | **0.7636** | **0.7383** |
 
 - **Observation:** All techniques significantly boost recall for the disaster class (from ~35% to >70%). Naive Bayes + Random Oversampling gives the highest recall (76.4%) and PR‑AUC (0.7383). Accuracy drops slightly but is still acceptable.
 
@@ -164,14 +161,9 @@ Imbalance causes models to favour the majority (non‑disaster) class. Even thou
 
 This project successfully demonstrated the impact of class imbalance on text classification and the effectiveness of various mitigation techniques.
 
-**Key findings:**
 - Without imbalance handling, models have high accuracy but very poor recall for the minority (disaster) class.
 - **Naive Bayes combined with Random Oversampling** provides the best recall (76.4%) and PR‑AUC, making it the most suitable model for real‑world disaster tweet detection where catching disasters is critical.
 - Class weighting and SMOTE also improve recall significantly and are viable alternatives depending on the desired precision‑recall balance.
-
-**Future work:** Hyperparameter tuning, using more advanced embeddings (e.g., BERT), and experimenting with threshold moving could further improve performance.
-
-The code is modular, reproducible, and includes all required visualisations. All submission components (report, code, README, requirements) are provided.
 
 ---
 
